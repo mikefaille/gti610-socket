@@ -88,7 +88,7 @@ func parseBytes(b *[512]byte, offset int, size int, data interface{}) {
 		byteToAnalysis := b[byteOffset : byteOffset+byteSize]
 		fmt.Println("byteToAnalysis : ", byteToAnalysis)
 
-		bitMask := buildBitMask(byteOffset, uint(size))
+		bitMask := buildBitMask(uint(offset), uint(size))
 		fmt.Println("bitmask : ", bitMask)
 		data := byteToInt(byteToAnalysis, byteSize)
 		fmt.Println("data : ", data&bitMask)
@@ -109,7 +109,7 @@ func parseBytes(b *[512]byte, offset int, size int, data interface{}) {
 				isZeroParsed = false
 				break
 			}
-			byteOffset = uint(byteOffset) + strLenght
+			byteOffset = uint(byteOffset) + strLenght - 1
 		}
 
 		fmt.Println(data)
@@ -141,7 +141,7 @@ func parseBytes(b *[512]byte, offset int, size int, data interface{}) {
 
 func buildBitMask(offset uint, size uint) (mask uint16) {
 
-	for i := offset - 1; i < size; i++ {
+	for i := offset; i < size-1; i++ {
 		mask = mask | (1 << uint(i))
 
 	}
