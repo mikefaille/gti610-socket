@@ -4,9 +4,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
-	"time"
+
+	"github.com/mikefaille/gti610-socket/dnsserver/dnsUtil"
 )
 
 func main() {
@@ -19,85 +21,40 @@ func main() {
 	checkError(err)
 
 	for {
-		var buf [512]byte
-		_, addr, err := conn.ReadFromUDP(buf[0:])
+		var byt [512]byte
+
+		bytSize, addr, err := conn.ReadFromUDP(byt[0:])
 
 		if err != nil {
 			return
 		}
-		go handleClient(conn, addr)
+
+		go handleClient(conn, addr, &byt, bytSize)
 	}
 }
 
-func handleClient(conn *net.UDPConn, srcAddr *net.UDPAddr) {
+func handleClient(conn *net.UDPConn, srcAddr *net.UDPAddr, byt *[512]byte, bytSise int) {
 
-	daytime := time.Now().String()
+	packet := new(dnsUtil.QuestionPckt)
 
-	conn.WriteToUDP([]byte(daytime), srcAddr)
+	packet.EncodeBytes(byt)
+	// //
+	// // fmt.Fprint("", byt[0:16])
+	// daytime := time.Now().String()
+
+	// buf := bytes.NewReader(byt[0:16])
+	// err := binary.Read(buf, binary.LittleEndian, &packet.ID)
+	// if err != nil {
+	// 	fmt.Println("binary.Read failed:", err)
+	// }
+	fmt.Println(packet.ID)
+
+	// conn.WriteToUDP(packet.ID, srcAddr)
 }
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error ", err.Error())
+		log.Fatal(os.Stderr, "Fatal error ", err.Error())
 		os.Exit(1)
 	}
 }
-
-// $ 6g echo.go && 6l -o echo echo.6
-// $ ./echo
-//
-//  ~ in another terminal ~
-//
-// $ nc localhost 3540
-
-// package main
-
-// import (
-// 	"bufio"
-// 	"fmt"
-// 	"log"
-// 	"net"
-// 	"strconv"
-// )
-
-// const PORT = 1202
-
-// func main() {
-// 	server, err := net.Listen("udp", ":"+strconv.Itoa(PORT))
-// 	if server == nil {
-// 		log.Panic("couldn't start listening: " + err.Error())
-// 	}
-// 	conns := clientConns(server)
-// 	for {
-// 		handleConn(<-conns)
-// 	}
-// }
-
-// func clientConns() chan net.Conn {
-// 	ch := make(chan net.Conn)
-// 	i := 0
-// 	go func() {
-// 		for {
-// 			client, err := listener.Accept()
-// 			if client == nil {
-// 				fmt.Printf("couldn't accept: " + err.Error())
-// 				continue
-// 			}
-// 			i++
-// 			fmt.Printf("%d: %v <-> %v\n", i, client.LocalAddr(), client.RemoteAddr())
-// 			ch <- client
-// 		}
-// 	}()
-// 	return ch
-// }
-
-// func handleConn(client net.Conn) {
-// 	b := bufio.NewReader(client)
-// 	for {
-// 		line, err := b.ReadBytes('\n')
-// 		if err != nil { // EOF, or worse
-// 			break
-// 		}
-// 		client.Write(line)
-// 	}
-// }
