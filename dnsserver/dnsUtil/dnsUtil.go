@@ -78,19 +78,18 @@ func parseBytes(b *[512]byte, offset int, size int, data interface{}) {
 
 	byteOffset := uint((offset + 1) / 8)
 
-	bitMask := buildBitMask(byteOffset, uint(size))
-	fmt.Println("bitmask : ", bitMask)
-
 	fmt.Println("offset : ", byteOffset) // int(math.Ceil(float64((offset+1)/8))))
 	fmt.Println("size : ", size)
 	byteSize := uint(math.Ceil(float64(size) / 8.0))
 	fmt.Println("byteSize : ", byteSize)
-	byteToAnalysis := b[byteOffset : byteOffset+byteSize]
-	fmt.Println("byteToAnalysis : ", byteToAnalysis)
 
 	switch data.(type) {
 	case uint16:
+		byteToAnalysis := b[byteOffset : byteOffset+byteSize]
+		fmt.Println("byteToAnalysis : ", byteToAnalysis)
 
+		bitMask := buildBitMask(byteOffset, uint(size))
+		fmt.Println("bitmask : ", bitMask)
 		data := byteToInt(byteToAnalysis, byteSize)
 		fmt.Println("data : ", data&bitMask)
 		fmt.Println("")
@@ -99,14 +98,15 @@ func parseBytes(b *[512]byte, offset int, size int, data interface{}) {
 
 		// TODO À TESTER !
 		data := data.(string)
-		doubleZeroes := false
+		isZeroParsed := false
 		strLenght := uint(b[byteOffset])
 
-		for doubleZeroes == true {
+		for isZeroParsed == true {
 
 			data += string(b[byteOffset : uint(byteOffset)+strLenght])
 
 			if uint(b[byteOffset]) == uint(0) {
+				isZeroParsed = false
 				break
 			}
 			byteOffset = uint(byteOffset) + strLenght
