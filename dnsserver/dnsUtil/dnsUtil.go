@@ -48,14 +48,14 @@ type QuestionPckt struct {
 
 func (qPckt QuestionPckt) EncodeBytes(b *[512]byte) {
 	qPckt.parseHeader(b)
-
+	qPckt.parseQuestion(b)
 }
 
 type GenericPacket interface {
 	EncodeBytes(b []byte)
 }
 
-func (header) parseHeader(b *[512]byte) (h header) {
+func (h header) parseHeader(b *[512]byte) {
 	fmt.Println("Binary : ", b[0:64])
 	parseBytes(b, 0, 16, h.ID)
 	fmt.Println("Header id ", h.ID)
@@ -71,6 +71,29 @@ func (header) parseHeader(b *[512]byte) (h header) {
 	parseBytes(b, 48, 16, h.ANCOUNT)
 	parseBytes(b, 64, 16, h.NSCOUNT)
 	parseBytes(b, 80, 16, h.ARCOUNT)
+
+}
+
+func (q QuestionPckt) parseQuestion(b *[512]byte) {
+
+	qNameLen := parseBytesName(b, 96, q.QNAME)
+	fmt.Println("QNAME : ", q.QNAME)
+	parseBytes(b, 96+qNameLen, 16, q.QTYPE)
+	fmt.Println("QTYPE : ", q.QTYPE)
+	parseBytes(b, 96+qNameLen+16, 16, q.QCLASS)
+	fmt.Println("QCLASS : ", q.QCLASS)
+
+	return
+}
+
+func (ReponsePckt) parseReponse(b *[512]byte) (r ReponsePckt) {
+
+	rNameLen := parseBytesName(b, 96, r.NAME)
+	parseBytes(b, 96+rNameLen, 16, r.TYPE)
+	parseBytes(b, 96+rNameLen+16, 16, r.CLASS)
+	parseBytes(b, 96+rNameLen+16+16, 32, r.TTL)
+	parseBytes(b, 96+rNameLen+16+16+32, 16, r.RDLENGTH)
+	parseBytes(b, 96+rNameLen+16+16+32+16, int(r.RDLENGTH), r.RDATA)
 
 	return
 }
@@ -95,60 +118,60 @@ func (QuestionPckt) parseHeader(b *[512]byte) (h header) {
 	return
 }
 
-func parseBytes(b *[512]byte, offset uint16, size uint16, data interface{}) {
+func parseBytes(b *[512]byte, offset int, size int, data interface{}) {
 
 	byteOffset := uint16((offset + 1) / 8)
-	fmt.Println("offset : ", offset)         // int(math.Ceil(float64((offset+1)/8))))
-	fmt.Println("byteoffset : ", byteOffset) // int(math.Ceil(float64((offset+1)/8))))
-	fmt.Println("size : ", size)
+	// fmt.Println("offset : ", offset)         // int(math.Ceil(float64((offset+1)/8))))
+	// fmt.Println("byteoffset : ", byteOffset) // int(math.Ceil(float64((offset+1)/8))))
+	// fmt.Println("size : ", size)
 	byteSize := uint16(math.Ceil(float64(size) / 8.0))
-	fmt.Println("byteSize : ", byteSize)
+	// fmt.Println("byteSize : ", byteSize)
 
-	switch data.(type) {
-	case uint16:
-		byteToAnalysis := b[byteOffset : byteOffset+byteSize]
-		fmt.Println("byteToAnalysis : ", byteToAnalysis)
-		bitFilterToInt(byteToAnalysis, offset, size, byteSize)
-
-		bitMask := buildBitMask(uint16(size))
-
-		fmt.Println("bitmask : ", bitMask)
-		data := byteToInt(byteToAnalysis, byteSize)
-		fmt.Println("data : ", data&bitMask)
-		fmt.Println("")
-		break
-	// case DomainName:
-
-	// 	// TODO À TESTER !
-	// 	data := data.(string)
-	// 	isZeroParsed := false
-	// 	strLenght := uint(b[byteOffset])
-
-	// 	for isZeroParsed == true {
-
-	// 		data += string(b[byteOffset : uint(byteOffset)+strLenght])
-
-	// 		if uint(b[byteOffset]) == uint(0) {
-	// 			isZeroParsed = false
-	// 			break
-	// 		}
-	// 		byteOffset = uint(byteOffset) + uint(strLenght-1)
-	// 	}
-
-	// 	// 	fmt.Println(data)
-
-	// 	break
-	default:
-		fmt.Println("unparsed data :/")
-		fmt.Println(data)
-		fmt.Println("")
-		break
-	}
-
+	byteToAnalysis := b[byteOffset : byteOffset+byteSize]
+	// fmt.Println("byteToAnalysis : ", byteToAnalysis)
+	data = bitFilterToInt(byteToAnalysis, uint16(size), byteSize)
+	// fmt.Println("data : ", data)
+	fmt.Println("")
 }
 
-//////// 0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-/////// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+func parseBytesName(b *[512]byte, offset uint16, data interface{}) (nameLenght int) {
+
+	byteOffset := uint((offset + 1) / 8)
+
+	fmt.Println("offset : ", byteOffset) // int(math.Ceil(float64((offset+1)/8))))
+
+	data, ok := data.(string)
+	if !ok {
+		fmt.Print("name parse not ok")
+	}
+	isZeroParsed := false
+	strLenght := uint(b[byteOffset])
+	nameLenght = 0
+
+	for isZeroParsed == false {
+		data := data.(string)
+		data += string(b[byteOffset : uint(byteOffset)+strLenght])
+		nameLenght++
+
+		if uint(b[byteOffset]) == uint(0) {
+			isZeroParsed = true
+			break
+		}
+		byteOffset = uint(byteOffset) + strLenght - 1
+
+	}
+
+	fmt.Println("size : ", nameLenght)
+	byteSize := uint(math.Ceil(float64(nameLenght) / 8.0))
+	fmt.Println("byteSize : ", byteSize)
+
+	fmt.Println(data)
+
+	return
+}
+
+//   0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
+//  +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // 	|                      ID                       |
 // 	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 // 	|QR|   Opcode  |AA|TC|RD|RA|   Z    |   RCODE   |
@@ -168,15 +191,22 @@ func buildBitMask(size uint16) (mask uint16) {
 		mask = mask | (1 << uint16(i))
 
 	}
-	return mask
+	return
 }
 
-func bitFilterToInt(b []byte, offset uint16, size uint16, byteSize uint16) (data uint16) {
+func bitFilterToInt(b []byte, size uint16, byteSize uint16) (data uint16) {
+
 	mask := buildBitMask(size)
+	fmt.Println("size : ", size, " mask : ", mask)
 	totalBitFromByte := byteSize * 8
 	bitShift := totalBitFromByte - size
-	bToBitshift := byteToInt(b, byteSize)
-	data = mask & (bToBitshift >> bitShift)
+	fmt.Println("bitshift : ", bitShift)
+	bForBitShift := byteToInt(b, byteSize)
+	byteShifted := (bForBitShift >> bitShift)
+	fmt.Println("byteShifted: ", byteShifted)
+	data = mask & (bForBitShift >> bitShift)
+	fmt.Println("byte : ", b)
+	fmt.Println("data : ", data)
 	return data
 }
 
