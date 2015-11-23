@@ -111,32 +111,33 @@ func parseBytes(b *[512]byte, offset uint16, size uint16, data interface{}) {
 		bitFilterToInt(byteToAnalysis, offset, size, byteSize)
 
 		bitMask := buildBitMask(uint16(size))
+
 		fmt.Println("bitmask : ", bitMask)
 		data := byteToInt(byteToAnalysis, byteSize)
 		fmt.Println("data : ", data&bitMask)
 		fmt.Println("")
 		break
-		// case DomainName:
+	// case DomainName:
 
-		// 	// TODO À TESTER !
-		// 	data := data.(string)
-		// 	isZeroParsed := false
-		// 	strLenght := uint(b[byteOffset])
+	// 	// TODO À TESTER !
+	// 	data := data.(string)
+	// 	isZeroParsed := false
+	// 	strLenght := uint(b[byteOffset])
 
-		// 	for isZeroParsed == true {
+	// 	for isZeroParsed == true {
 
-		// 		data += string(b[byteOffset : uint(byteOffset)+strLenght])
+	// 		data += string(b[byteOffset : uint(byteOffset)+strLenght])
 
-		// 		if uint(b[byteOffset]) == uint(0) {
-		// 			isZeroParsed = false
-		// 			break
-		// 		}
-		// 		byteOffset = uint16(byteOffset) + strLenght
-		// 	}
+	// 		if uint(b[byteOffset]) == uint(0) {
+	// 			isZeroParsed = false
+	// 			break
+	// 		}
+	// 		byteOffset = uint(byteOffset) + uint(strLenght-1)
+	// 	}
 
-		// 	fmt.Println(data)
+	// 	// 	fmt.Println(data)
 
-		break
+	// 	break
 	default:
 		fmt.Println("unparsed data :/")
 		fmt.Println(data)
