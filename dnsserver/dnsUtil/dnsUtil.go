@@ -114,6 +114,16 @@ func (QuestionPckt) parseHeader(b *[512]byte) (h header) {
 	parseBytes(b, 48, 16, h.ANCOUNT)
 	parseBytes(b, 64, 16, h.NSCOUNT)
 	parseBytes(b, 80, 16, h.ARCOUNT)
+}
+
+func (ReponsePckt) parseReponse(b *[512]byte) (r ReponsePckt) {
+
+	rNameLen := parseBytesName(b, 96, r.NAME)
+	parseBytes(b, 96+rNameLen, 16, r.TYPE)
+	parseBytes(b, 96+rNameLen+16, 16, r.CLASS)
+	parseBytes(b, 96+rNameLen+16+16, 32, r.TTL)
+	parseBytes(b, 96+rNameLen+16+16+32, 16, r.RDLENGTH)
+	parseBytes(b, 96+rNameLen+16+16+32+16, int(r.RDLENGTH), r.RDATA)
 
 	return
 }
