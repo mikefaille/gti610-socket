@@ -58,6 +58,7 @@ type GenericPacket interface {
 func (h header) parseHeader(b *[512]byte) {
 	fmt.Println("Binary : ", b[0:64])
 	parseBytes(b, 0, 16, h.ID)
+	fmt.Println("Header id ", h.ID)
 	parseBytes(b, 15, 1, h.QR)
 	parseBytes(b, 16, 4, h.OPCODE)
 	parseBytes(b, 20, 1, h.AA)
@@ -85,6 +86,24 @@ func (q QuestionPckt) parseQuestion(b *[512]byte) {
 	return
 }
 
+func (QuestionPckt) parseHeader(b *[512]byte) (h header) {
+	fmt.Println("Binary : ", b[0:64])
+	parseBytes(b, 0, 16, h.ID)
+	fmt.Println("Header : ", h.ID)
+	parseBytes(b, 15, 1, h.QR)
+	parseBytes(b, 16, 4, h.OPCODE)
+	parseBytes(b, 20, 1, h.AA)
+	parseBytes(b, 21, 1, h.TC)
+	parseBytes(b, 22, 1, h.RD)
+	parseBytes(b, 23, 1, h.RA)
+	parseBytes(b, 24, 4, h.Z)
+	parseBytes(b, 28, 4, h.RCODE)
+	parseBytes(b, 32, 16, h.QDCOUNT)
+	parseBytes(b, 48, 16, h.ANCOUNT)
+	parseBytes(b, 64, 16, h.NSCOUNT)
+	parseBytes(b, 80, 16, h.ARCOUNT)
+}
+
 func (ReponsePckt) parseReponse(b *[512]byte) (r ReponsePckt) {
 
 	rNameLen := parseBytesName(b, 96, r.NAME)
@@ -97,31 +116,31 @@ func (ReponsePckt) parseReponse(b *[512]byte) (r ReponsePckt) {
 	return
 }
 
-func parseBytes(b *[512]byte, offset int, size int, data interface{}) {
 
-	byteOffset := uint((offset + 1) / 8)
 
-	fmt.Println("offset : ", byteOffset) // int(math.Ceil(float64((offset+1)/8))))
+func parseBytes(b *[512]byte, offset uint16, size uint16, data interface{}) {
+
+	byteOffset := uint16((offset + 1) / 8)
+	fmt.Println("offset : ", offset)         // int(math.Ceil(float64((offset+1)/8))))
+	fmt.Println("byteoffset : ", byteOffset) // int(math.Ceil(float64((offset+1)/8))))
 	fmt.Println("size : ", size)
-	byteSize := uint(math.Ceil(float64(size) / 8.0))
+	byteSize := uint16(math.Ceil(float64(size) / 8.0))
 	fmt.Println("byteSize : ", byteSize)
 
-	//uint16
-	byteToAnalysis := b[byteOffset : byteOffset+byteSize]
-	fmt.Println("byteToAnalysis : ", byteToAnalysis)
 
-	bitMask := buildBitMask(uint(offset), uint(size))
-	fmt.Println("bitmask : ", bitMask)
-	data = byteToInt(byteToAnalysis, byteSize)
+		byteToAnalysis := b[byteOffset : byteOffset+byteSize]
+		fmt.Println("byteToAnalysis : ", byteToAnalysis)
+		bitFilterToInt(byteToAnalysis, offset, size, byteSize)
 
-	fmt.Println("data : ", data.(uint16)&bitMask)
-	fmt.Println("")
-
-}
+		bitMask := buildBitMask(uint16(offset), uint16(size))
+		fmt.Println("bitmask : ", bitMask)
+		data := byteToInt(byteToAnalysis, byteSize)
+		fmt.Println("data : ", data.(uint16)&bitMask)
+		fmt.Println("")
+	}
 
 func parseBytesName(b *[512]byte, offset int, data interface{}) (nameLenght int) {
-
-	byteOffset := uint((offset + 1) / 8)
+byteOffset := uint((offset + 1) / 8)
 
 	fmt.Println("offset : ", byteOffset) // int(math.Ceil(float64((offset+1)/8))))
 
@@ -129,9 +148,11 @@ func parseBytesName(b *[512]byte, offset int, data interface{}) (nameLenght int)
 	if !ok {
 		fmt.Print("name parse not ok")
 	}
-	isZeroParsed := false
-	strLenght := uint(b[byteOffset])
-	nameLenght = 0
+		// TODO À TESTER !
+		data := data.(string)
+		isZeroParsed := false
+		strLenght := uint(b[byteOffset])
+		nameLenght = 0
 
 	for isZeroParsed == false {
 		data := data.(string)
@@ -169,16 +190,25 @@ func parseBytesName(b *[512]byte, offset int, data interface{}) (nameLenght int)
 // 	|                    ARCOUNT                    |
 // 	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 
-func buildBitMask(offset uint, size uint) (mask uint16) {
+func buildBitMask(size uint16) (mask uint16) {
 
-	for i := offset; i < size-1; i++ {
-		mask = mask | (1 << uint(i))
+	for i := uint16(0); i < size; i++ {
+		mask = mask | (1 << uint16(i))
 
 	}
 	return
 }
 
-func byteToInt(b []byte, size uint) (data uint16) {
+func bitFilterToInt(b []byte, offset uint16, size uint16, byteSize uint16) (data uint16) {
+	mask := buildBitMask(size)
+	totalBitFromByte := byteSize * 8
+	bitShift := totalBitFromByte - size
+	bToBitshift := byteToInt(b, byteSize)
+	data = mask & (bToBitshift >> bitShift)
+	return data
+}
+
+func byteToInt(b []byte, size uint16) (data uint16) {
 
 	for i := size; i > 0; i-- {
 		data = data | (uint16(b[i-1]) << uint(8*(size-i)))
